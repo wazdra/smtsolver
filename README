@@ -1,0 +1,85 @@
+********************************************************************************
+********************************* FILES DESCR. *********************************
+********************************************************************************
+
+smt.ml :
+       Contains the definition of a smt instance : a cnf.
+       Also contains the functions to solve those cnf, depending on a Sat Solver
+       (The actual solver is still TODO, see the TODO list)      
+________________________________________________________________________________
+
+sat.ml
+	Contains an instance of a Sat Solver, using dpll tactics. The main
+	function is solgen : DPLL.t -> assignment list.
+	A DPLL.t is a formula and an assignment list called mode(which doesn't
+	have tocover all the variables, and can even be empty).
+	When you call solgen on a DPLL.t with an empty model, it only generates
+	a satisfying assignment of all variables.
+	When you call solgen on any other DPLL.t, it will backtrack and generate
+	the next valuation (according to inversed lexicological order). This way
+	you never have to modify the formula to get a new satisfying valuation.
+	If there is no more satisfying model, raise an exception.
+________________________________________________________________________________
+
+unionfind.ml :
+	     Contains the implementation of Union-Find defined in the article
+	     given in the subject webpage. It is persistent and optimal.
+________________________________________________________________________________
+
+parser.ml :
+	  file_parser is the "main" function : string -> cnf (see smt.ml).
+	  the string is a path to a file, the cnf returned is the one encoded by
+	  the said file.
+
+
+********************************************************************************
+************************************* TODO *************************************
+********************************************************************************
+
+                            *************************
+                            ** To get it working : **
+                            *************************
+
+Implement a union find that can accept incompatibilities, and fail when you're
+trying to make the union of two incompatible sets (or trying to make incompati-
+ble two elements in the same set).
+Right now I have no idea how to do this efficiently, but a naive implementation
+would be nice.
+
+********************************************************************************
+
+Join all the pieces together in smt.ml, with a function
+     resol : cnf -> litteral list
+     who would give a solution if there is any, fail otherwise.
+I am currently working on this. 
+
+
+
+                            *************************
+                            ** To make it faster : **
+                            *************************		      
+
+Make reroot tail recursive (in unionfind.ml : PersistentArray). This can be done
+in CPS (continuation passing style).
+
+********************************************************************************
+
+Find a good implementation of Union-Find with incompatibilities. It has to be
+persistent, regarding to the need of backtrack in smt.ml : resol.
+Question : can we keep the O(1) amortized complexity for Union, Find (and also
+to add an incompatibility) ?
+
+
+                           **************************
+                           ** To make it clearer : **
+                           **************************
+
+Create a main.ml which would contain a script to parse the calling parameters
+and arguments.
+    * It would be pretty easy to add a SAT Solver mode (using DPLL.from_file).
+
+    * There should be a mode to get one solution, or all of them (both for
+    the SMT Solver, and for the SAT Solver).
+
+    * Handle all errors.
+    
