@@ -1,5 +1,7 @@
-exception No_more_models
+open Types;;
 
+exception No_more_models
+             
 module DPLL = struct
   type assignment =
     |Aff of int

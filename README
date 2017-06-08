@@ -5,7 +5,8 @@
 smt.ml :
        Contains the definition of a smt instance : a cnf.
        Also contains the functions to solve those cnf, depending on a Sat Solver
-       (The actual solver is still TODO, see the TODO list)      
+       (The actual solver is still TODO, see the TODO list)
+
 ________________________________________________________________________________
 
 sat.ml
@@ -30,7 +31,11 @@ parser.ml :
 	  file_parser is the "main" function : string -> cnf (see smt.ml).
 	  the string is a path to a file, the cnf returned is the one encoded by
 	  the said file.
+________________________________________________________________________________
 
+types.ml :
+	 Just a file to ease compilation, containing all the types used in
+	 smt.ml and sat.ml
 
 ********************************************************************************
 ************************************* TODO *************************************
@@ -82,4 +87,5 @@ and arguments.
     the SMT Solver, and for the SAT Solver).
 
     * Handle all errors.
-    
+
+Create a Makefile.
