@@ -1,7 +1,7 @@
-open Types;;
+open Mytypes;;
 
 exception No_more_models
-             
+exception Bad_file
 module DPLL = struct
   type assignment =
     |Aff of int
@@ -122,10 +122,6 @@ module DPLL = struct
                  (* edit next line to change priorities *)
                  |Some(hd1::tl1) -> aux tl model modelmap ((hd1::tl1)::acc) in
 
-    let () = match check_modelmap dpll modelmap with
-      |true -> print_string "proper !"; print_newline ()
-      |false -> print_string "nope !"; print_newline ()
-    in
     aux (dpll.formula.cnf) (dpll.model) modelmap []
     
 
@@ -137,20 +133,27 @@ module DPLL = struct
 
   let fromfile path =
     let rec start ic = match String.split_on_char ' ' (input_line ic) with
+      |[] -> start ic
       |"c"::tl -> start ic
-      |"p" ::tl -> match tl with
-                   |"cnf"::vars::clauses::tl -> (int_of_string vars,int_of_string clauses)
-                   |_ -> assert false in
-
+      |"p" ::tl -> begin
+          match tl with
+          |"cnf"::vars::clauses::tl -> (int_of_string vars,int_of_string clauses)
+          |_ -> assert false end
+      |_ -> raise Bad_file in
+    
     let rec clause stringlist = match stringlist with
       |"0"::[]|[] -> []
-      |hd::tl -> match int_of_string hd with
+      |""::tl |"\t"::tl -> clause tl
+      |hd::tl -> print_endline hd;
+                 match int_of_string hd with
                  |n when n>0 -> Val(n)::(clause tl)
-                 |n when n<0 -> Neg(-n)::(clause tl) in
+                 |n when n<0 -> Neg(-n)::(clause tl)
+                 |_ -> raise Bad_file (* cas n = 0 *) in
 
     let rec clauses ic =
       try
         match String.split_on_char ' ' (input_line ic) with
+        |[] -> clauses ic
         |"c"::tl -> clauses ic
         |hd::tl -> ((clause (hd::tl)) ::(clauses ic))
       with

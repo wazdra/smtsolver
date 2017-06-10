@@ -1,3 +1,5 @@
+exception Impossible_action
+
 module type UnionFind = sig
   type t
   val create : int -> t
