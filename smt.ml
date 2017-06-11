@@ -30,8 +30,7 @@ module UFD = Make(PersArr);;
 let affect ufd assignment =
   try match assignment with
       |Equal(n,m) -> Some(UFD.union ufd n m)
-      |Unequal(n,m) -> Some(UFD.union ufd n m)  (* THIS HAS TO BECOME DISJOIN *)
-                           (* this "mistake" is for typing tests purposes *)
+      |Unequal(n,m) -> Some(UFD.disjoin ufd n m)  
   with
   |Impossible_action -> None
                           
