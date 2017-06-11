@@ -1,3 +1,5 @@
+open Mytypes;;
+
 exception Unvalid_atom of string
 exception Unvalid_line of string*string
 exception Parsing_failed of int*exn
@@ -31,7 +33,7 @@ let clause_parser intmax str : clause =
   with
   |Unvalid_atom s -> raise (Unvalid_line (str,s))
                            
-let cnf_parser intmax nbclause ic linenum=
+let cnf_parser intmax nbclause ic linenum : cnf=
   let rec aux ic acc nbline =
     try 
       let str = input_line ic in
@@ -44,7 +46,7 @@ let cnf_parser intmax nbclause ic linenum=
   let cll,ln = aux ic [] linenum in
   if (List.length cll == nbclause) then
     {
-      nbvars = intmax;
+      nbvar = intmax;
       clauses = cll;
     }
   else raise (Wrong_number_of_clauses ln)
