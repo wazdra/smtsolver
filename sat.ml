@@ -144,8 +144,7 @@ module DPLL = struct
     let rec clause stringlist = match stringlist with
       |"0"::[]|[] -> []
       |""::tl |"\t"::tl -> clause tl
-      |hd::tl -> print_endline hd;
-                 match int_of_string hd with
+      |hd::tl -> match int_of_string hd with
                  |n when n>0 -> Val(n)::(clause tl)
                  |n when n<0 -> Neg(-n)::(clause tl)
                  |_ -> raise Bad_file (* cas n = 0 *) in

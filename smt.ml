@@ -62,7 +62,7 @@ between oldval and newcal *)
 let rec gen_sol ufd dpll assignment_list valuation numvars acc =
   
   match assignment_list with
-  |[] -> (ufd,valuation,dpll,acc) (* We also return the continuation *)
+  |[] -> (ufd,valuation,acc) (* We also return the continuation *)
   |hd::tl -> match hd with
              |Aff(n) ->
                begin match affect ufd (tradback (numvars) (Val n)) with
