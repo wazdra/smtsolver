@@ -81,18 +81,31 @@ module PersArr : PersistentArray = struct
     |Diff of int * 'a * 'a t
 
   let init n f = ref (Arr (Array.init n f))
-  let rec reroot t = match !t with (* TODO : make it tail-recursive *)
-    |Arr _ -> ()
-    |Diff (i,v,t') ->
-      reroot t';
-      begin match !t' with
-      |Arr a as n -> let v' = a.(i) in
-                     a.(i) <- v;
-                     t := n;
-                     t' := Diff (i,v',t)
-      |Diff _ -> assert false
-      end
-
+	
+	let reroot t =
+		let rec aux2 a = function
+			| [] ->
+				a
+			| t::tl ->
+				begin match !t with
+				| Diff(i,v,t') ->
+					let v' = a.(i) in
+					begin
+					a.(i) <- v;
+					t' := Diff(i,v',t);
+					aux2 a tl	
+					end
+				| _ -> assert false
+				end
+				
+		in
+		let rec aux1 acc t = match !t with
+			| Arr a -> aux2 a acc 
+			| Diff(_,_,t') -> aux1 (t::acc) t'
+		in
+		let a = aux1 [] t in
+		t := Arr a
+		
   let rec get t i = match !t with
     |Arr a -> a.(i)
     |Diff _ ->

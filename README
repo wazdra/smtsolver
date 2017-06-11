@@ -58,11 +58,6 @@ I am currently working on this.
                             ** To make it faster : **
                             *************************		      
 
-Make reroot tail recursive (in unionfind.ml : PersistentArray). This can be done
-in CPS (continuation passing style).
-
-********************************************************************************
-
 Find a good implementation of Union-Find with incompatibilities. It has to be
 persistent, regarding to the need of backtrack in smt.ml : resol.
 Question : can we keep the O(1) amortized complexity for Union, Find (and also
