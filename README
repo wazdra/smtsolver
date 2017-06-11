@@ -45,12 +45,6 @@ types.ml :
                             ** To get it working : **
                             *************************
 
-Implement a union find that can accept incompatibilities, and fail when you're
-trying to make the union of two incompatible sets (or trying to make incompati-
-ble two elements in the same set).
-Right now I have no idea how to do this efficiently, but a naive implementation
-would be nice.
-
 ********************************************************************************
 
 Join all the pieces together in smt.ml, with a function
@@ -73,6 +67,10 @@ Find a good implementation of Union-Find with incompatibilities. It has to be
 persistent, regarding to the need of backtrack in smt.ml : resol.
 Question : can we keep the O(1) amortized complexity for Union, Find (and also
 to add an incompatibility) ?
+
+********************************************************************************
+
+A less naive implementation of ufd with disjoin.
 
 
                            **************************
