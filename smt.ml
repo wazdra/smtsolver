@@ -21,7 +21,7 @@ let cnf_to_sat cnf =
   let mynb = (cnf.nbvar * (cnf.nbvar + 1)) in
   {
     nbvars = mynb;
-    cnf = (List.map (clause_to_sat mynb) (cnf.clauses));
+    cnf = (List.map (clause_to_sat (cnf.nbvar)) (cnf.clauses));
   }
 
 let dpll cnf = DPLL.create (cnf_to_sat cnf);;
@@ -36,59 +36,83 @@ let affect ufd assignment =
                           
 let backtrack dpll oldval ufdlist = 
   (* This should return : 
-                           - the new valuation we'll be working on.
+                           - the new valuation we'll be working on (without what's already done)
                            - the ufdlist with only the ufds which are compatible with that
                              valuation
-                           - what's left of the valuation to fullfill if we use the best ufd
-                             we have so far *)
-  
-  let rec finddiff oldval newval = (* This returns the part of oldval which differs from newval *)
-    match oldval,newval with 
-    |hd1::tl1,hd2::tl2 when hd1 = hd2 -> finddiff tl1 tl2
-    |_ -> oldval in
-  let rec findufd diff ufdlist = (* This changes ufdlist accordingly to the difference
-between oldval and newcal *)
+                           - what we have still already done *)
+  let rec finddec oldval = match oldval with
+    |Dec(n)::tl -> Dec(n)
+    |_::tl -> finddec tl
+    |[] -> raise Sat.No_more_models in
+  let finddiff oldval newval = (* This returns the part of oldval and newval, with their
+                                  biggest common prefix removed *)
+    let rec aux l1 l2 acc = 
+      match l1,l2 with 
+      |hd1::tl1,hd2::tl2 when hd1 = hd2 -> aux tl1 tl2 (hd1::acc)
+      |_ -> l1,l2,acc in
+    let l1,l2,l3 = (aux (List.rev oldval) newval []) in
+    (l1,l2, l3) in
+  let rec count diff acc = match diff with
+    |Dec(_)::tl -> count tl (acc+1)
+    |[] -> acc
+    |_::tl -> count tl acc in
+  let rec remove_from_list l n = match n with
+    |0 -> l
+    |_ -> match l with
+          |[] -> assert false
+          |hd::tl -> remove_from_list tl (n-1) in
+(*  let rec findufd diff ufdlist = (* This changes ufdlist accordingly to the difference
+                                    between oldval and newval i.e. removes as much elements
+                                    as the number of decisions present in oldval *)
     match ufdlist with
-    |[] -> assert false (* This will not happen ... ? *)
+    |[] -> begin match diff with
+           |[] -> []
+           |Aff(_)::tl1|Ref(_)::tl1 -> findufd tl1 ufdlist
+           |_-> assert false
+           end
     |hd::tl -> match diff with
                |[] -> ufdlist
                |Aff(_)::tl1|Ref(_)::tl1 -> findufd tl1 ufdlist
-               |Dec(_)::tl1 -> findufd tl1 tl in
-  let newval = DPLL.solgen dpll in
-  let diff = finddiff oldval newval in
-  let newlist = findufd diff ufdlist in
-  (newval,newlist,diff)
+               |Dec(_)::tl1 -> findufd tl1 tl in *)
+  let lastdec = finddec oldval in (* Last decision encountered. We have to backtrack on SAT
+at least to this one to find a new valuation we can satisfy *)
+  let newval = List.rev (DPLL.solgen_from_dec dpll lastdec) in (* This valuation has at least
+one decision different that what we've already processed *)
+  let diffold,diffnew,commonpart = finddiff oldval newval in
+  let newlist = remove_from_list ufdlist (count diffold 0) in
+  (* let newlist = findufd diffold ufdlist in *)
+  (diffnew,newlist,commonpart)
     
-let rec gen_sol ufd dpll assignment_list valuation numvars acc =
+let rec gen_sol ufd dpll assignment_list done_of_val numvars acc =
   
   match assignment_list with
-  |[] -> (ufd,valuation,acc) (* We also return the continuation *)
+  |[] -> (ufd,done_of_val,acc) (* We also return the continuation *)
   |hd::tl -> match hd with
              |Aff(n) ->
                begin match affect ufd (tradback (numvars) (Val n)) with
-               |Some newufd -> gen_sol newufd dpll tl valuation numvars acc
-               |None -> match (backtrack dpll valuation acc) with
-                        |nv,(hd1::tl1),diff -> gen_sol hd1 dpll diff nv numvars tl1
-                        |nv,[],diff -> gen_sol (UFD.create numvars) dpll diff nv numvars []
+               |Some newufd -> gen_sol newufd dpll tl (hd::done_of_val) numvars acc
+               |None -> match (backtrack dpll (done_of_val) acc) with
+                        |td,(hd1::tl1),donepart -> gen_sol hd1 dpll td donepart numvars (hd1::tl1)
+                        |td,[],donepart -> gen_sol (UFD.create numvars) dpll td donepart numvars []
                end
              |Ref(n) ->
                begin match affect ufd (tradback numvars (Neg n)) with
-               |Some newufd -> gen_sol newufd dpll tl valuation numvars acc
-               |None -> match (backtrack dpll valuation acc) with
-                        |nv,(hd1::tl1),diff -> gen_sol hd1 dpll diff nv numvars tl1
-                        |nv,[],diff -> gen_sol (UFD.create numvars) dpll diff nv numvars []
+               |Some newufd -> gen_sol newufd dpll tl (hd::done_of_val) numvars acc
+               |None -> match (backtrack dpll done_of_val acc) with
+                        |td,(hd1::tl1),donepart -> gen_sol hd1 dpll td donepart numvars (hd1::tl1)
+                        |td,[],donepart -> gen_sol (UFD.create numvars) dpll td donepart numvars []
                end
              |Dec(n) ->
                begin match affect ufd (tradback numvars (Val n)) with
-               |Some newufd -> gen_sol newufd dpll tl valuation numvars (ufd::acc)
-               |None -> match (backtrack dpll valuation acc) with
-                        |nv,(hd1::tl1),diff -> gen_sol hd1 dpll diff nv numvars tl1
-                        |nv,[],diff -> gen_sol (UFD.create numvars) dpll diff nv numvars []
+               |Some newufd -> gen_sol newufd dpll tl (hd::done_of_val) numvars (ufd::acc)
+               |None -> match (backtrack dpll (Dec(n)::done_of_val) (ufd::acc)) with
+                        |td,(hd1::tl1),donepart -> gen_sol hd1 dpll td donepart numvars (hd1::tl1)
+                        |td,[],donepart -> gen_sol (UFD.create numvars) dpll td donepart numvars []
                end
                  
 let onesolution cnf = 
   let formula = dpll cnf in
-  let valu = solgen formula in
-  gen_sol (UFD.create cnf.nbvar) formula valu valu (cnf.nbvar) [];; 
+  let valu = List.rev (solgen formula) in
+  gen_sol (UFD.create cnf.nbvar) formula valu [] (cnf.nbvar) [];; 
                    
 (* TODO : allsolutions at once *)

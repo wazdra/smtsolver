@@ -1,11 +1,17 @@
 OCAMLBUILD=ocamlbuild -classic-display \
-		-tags annot,debug,thread \
-		-libs unix \
-		-I src
+		-tags bin_annot,debug,thread \
+		-libs str,unix \
+		-I src 
 TARGET=native
+BYTECODE=byte
+
+
 
 example:
 	$(OCAMLBUILD) main.$(TARGET) \
+
+test :
+	$(OCAMLBUILD) main.$(BYTECODE) \
 
 clean:
 	$(OCAMLBUILD) -clean

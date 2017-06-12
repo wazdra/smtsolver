@@ -27,8 +27,8 @@ module Make(A : PersistentArray) : UnionFind = struct
 	{mutable parent : int A.t; disjoin_class : IntSet.t A.t}
 	
 	let create n =
-		{parent = A.init n (function i -> i);
-		disjoin_class = A.init n (function _ -> IntSet.empty)}
+		{parent = A.init (n+1) (function i -> i);
+		disjoin_class = A.init (n+1) (function _ -> IntSet.empty)}
 	
 	let rec find ufd i =
 		match A.get ufd.parent i with

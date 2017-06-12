@@ -131,6 +131,13 @@ module DPLL = struct
           backtrack dpll modelmap;
           solution dpll modelmap
 
+  let rec solgen_from_dec dpll at = match dpll.model with
+    |[] -> assert false
+    |hd::tl when hd = at -> let modelmap = create_map dpll in
+                            backtrack dpll modelmap;
+                            solution dpll modelmap
+    |hd::tl -> dpll.model <- tl;
+               solgen_from_dec dpll at
   let fromfile path =
     let rec start ic = match String.split_on_char ' ' (input_line ic) with
       |[] -> start ic
@@ -151,7 +158,7 @@ module DPLL = struct
 
     let rec clauses ic =
       try
-        match String.split_on_char ' ' (input_line ic) with
+        match Str.split (Str.regexp "[ \t]+") (input_line ic) with
         |[] -> clauses ic
         |"c"::tl -> clauses ic
         |hd::tl -> ((clause (hd::tl)) ::(clauses ic))

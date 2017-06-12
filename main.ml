@@ -36,24 +36,35 @@ module UFD = Make(PersArr);;
 let ufprinter nbvars uf =
   print_string "Solution : ";
   for i = 1 to nbvars do
-    print_int i ;
-    print_string " = ";
-    print_int (UFD.find uf i);
-    print_string " ";
+    if UFD.find uf i = i then
+      begin
+        print_string "{ ";
+        for j = 1 to nbvars do
+          if UFD.find uf j = i then
+            begin
+              print_int j;
+              print_string " "
+            end
+        done;
+        print_string "} ";
+      end
   done;
     print_newline ();;
 
 let smt mode str =
-  let rec aux nbvariables ufd dpll assignment_list valuation acc =
-    let ufd',valu',acc = try gen_sol ufd dpll assignment_list valuation nbvariables acc
+  let rec aux nbvariables ufd dpll assignments_to_do done_assignments acc =
+    let ufd',valu',acc = try gen_sol ufd dpll assignments_to_do done_assignments nbvariables acc
                          with
                          |No_more_models -> print_endline "No more models !";
                                             exit 0
     in
     ufprinter nbvariables ufd';
-    match (backtrack dpll valuation acc) with
-                        |nv,(hd1::tl1),diff -> aux nbvariables hd1 dpll diff nv tl1
-                        |nv,[],diff -> aux nbvariables (UFD.create nbvariables) dpll diff nv []
+    try match (backtrack dpll valu' acc) with
+        |td,(hd1::tl1),da -> aux nbvariables hd1 dpll td da (hd1::tl1)
+        |td,[],da -> aux nbvariables (UFD.create nbvariables) dpll td da []
+    with
+    |No_more_models -> print_endline "No more models !";
+                       exit 0
   in
   let cnf = try file_parser str
             with
@@ -61,21 +72,22 @@ let smt mode str =
                                        print_int n;
                                        print_endline " : erreur de syntaxe.";
                                        exit 0
-
+                                          
   in
   if mode then
     let formula = dpll cnf in
-    let valu = try DPLL.solgen formula
+    let valu = try (List.rev (DPLL.solgen formula))
                with
                |No_more_models -> print_endline "UNSAT !";
                                   exit 0 in
-                                       
-    aux (cnf.nbvar) (UFD.create cnf.nbvar) formula valu valu [];
+    
+    aux (cnf.nbvar) (UFD.create cnf.nbvar) formula valu [] [];
   else
     let ufd,_,_  = onesolution cnf in
     ufprinter (cnf.nbvar) ufd;;
 
-let help () =
+let help str =
+  print_endline str;
   print_endline "Usage : cmd x y z where :";
   print_endline "                         x has to be \"sat\" or \"smt\",";
   print_endline "                         y has to be \"all\" or \"one\",";
@@ -88,11 +100,11 @@ let () =
     let mode = match Sys.argv.(2) with
     |"all" -> true
     |"one" -> false
-    |_ -> help () in
+    |_ -> help ("Wrong argument : "^(Sys.argv.(2))) in
     let path = Sys.argv.(3) in
     match Sys.argv.(1) with
     |"sat" -> sat mode path
     |"smt" -> smt mode path
-    |_ -> help ()
+    |_ -> help ("Wrong argument : "^(Sys.argv.(1)))
   with
-  |Invalid_argument _ -> help ()
+  |Invalid_argument str -> help str

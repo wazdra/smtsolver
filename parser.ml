@@ -7,15 +7,11 @@ exception Wrong_number_of_clauses of int
 exception Incorrect_initialization of string
                                         
 let atom_parser str = try
-    match String.split_on_char '=' str with
+    match Str.split (Str.regexp "[ \t]*=[ \t]*") str with
     |hd1::hd2::[] -> Equal((int_of_string hd1),(int_of_string hd2))
     |hd::[] ->
-      begin match String.split_on_char '<' str with
-      |hd1::hd2::[] -> begin match String.get hd2 0 with
-                       |'>' -> Unequal((int_of_string hd1),
-                                       (int_of_string (String.sub hd2 1 (String.length hd2 -1))))
-                       |_ -> raise (Unvalid_atom str)
-                       end
+      begin match Str.split (Str.regexp "[ \t]*<>[ \t]*") str with
+      |hd1::hd2::[] ->  Unequal((int_of_string hd1),(int_of_string hd2))
       |_ -> raise (Unvalid_atom str)
       end
     |_ -> raise (Unvalid_atom str)
@@ -29,7 +25,7 @@ let atom_checker intmax str = match (atom_parser str) with
               
 let clause_parser intmax str : clause =
   try
-    List.rev_map (atom_checker intmax) (String.split_on_char ' ' str)
+    List.rev_map (atom_checker intmax) (Str.split (Str.regexp "[ \t]+") str)
   with
   |Unvalid_atom s -> raise (Unvalid_line (str,s))
                            
