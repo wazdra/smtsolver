@@ -30,15 +30,13 @@ module Make(A : PersistentArray) : UnionFind = struct
 		{parent = A.init (n+1) (function i -> i);
 		disjoin_class = A.init (n+1) (function _ -> IntSet.empty)}
 	
-	let rec find ufd i =
-		match A.get ufd.parent i with
-		| j when j = i -> i
-		| j -> 
-			let k = find ufd j in 
-			begin
-			ufd.parent <- A.set ufd.parent i k;
-			k
-			end	
+	let find ufd i =
+		let rec aux acc i j =
+			match A.get ufd.parent j with
+			| k when k = j -> (List.iter (function k -> ufd.parent <- A.set ufd.parent k j) acc; j)
+			| k -> aux (i::acc) j k
+		in
+		let j = A.get ufd.parent i in aux [] i j
 	
 	let union ufd i j =
 		let ri = find ufd i in
@@ -54,11 +52,13 @@ module Make(A : PersistentArray) : UnionFind = struct
 				else
 					(ri, rj, ci, cj)
 			in
-			if IntSet.exists (function x -> find ufd x = rj) ci then
+			let ci' = IntSet.map (find ufd) ci in
+			if IntSet.mem rj ci' then
 				raise Impossible_action
 			else
+				let cj' = IntSet.map (find ufd) cj in
 				{parent = A.set ufd.parent rj ri; disjoin_class = 
-				A.set ufd.disjoin_class ri (IntSet.union ci cj)}
+				A.set ufd.disjoin_class ri (IntSet.union ci' cj')}
 	
 	let disjoin ufd i j =
 		let ri = find ufd i in
