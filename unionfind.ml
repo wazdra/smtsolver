@@ -48,17 +48,17 @@ module Make(A : PersistentArray) : UnionFind = struct
 		else
 			let ci = A.get ufd.disjoin_class ri in
 			let cj = A.get ufd.disjoin_class rj in
-			if IntSet.mem rj ci then
+			let (ri, rj, ci, cj) = 
+				if IntSet.cardinal cj < IntSet.cardinal ci then
+					(rj, ri, cj, ci)
+				else
+					(ri, rj, ci, cj)
+			in
+			if IntSet.exists (function x -> find ufd x = rj) ci then
 				raise Impossible_action
 			else
-				let aux k disjoin_class =
-					let c = A.get disjoin_class k in
-					let c' = IntSet.remove rj c in
-					let c'' = IntSet.add ri c' in
-					A.set disjoin_class k c''
-				in
 				{parent = A.set ufd.parent rj ri; disjoin_class = 
-				A.set (IntSet.fold aux cj ufd.disjoin_class) ri (IntSet.union ci cj)}
+				A.set ufd.disjoin_class ri (IntSet.union ci cj)}
 	
 	let disjoin ufd i j =
 		let ri = find ufd i in
