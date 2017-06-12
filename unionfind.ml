@@ -24,7 +24,7 @@ module IntSet = Set.Make(
 
 module Make(A : PersistentArray) : UnionFind = struct
 	type t =
-	{mutable parent : int A.t; disjoin_class : IntSet.t A.t}
+	{mutable parent : int A.t; mutable disjoin_class : IntSet.t A.t}
 	
 	let create n =
 		{parent = A.init (n+1) (function i -> i);
@@ -53,12 +53,15 @@ module Make(A : PersistentArray) : UnionFind = struct
 					(ri, rj, ci, cj)
 			in
 			let ci' = IntSet.map (find ufd) ci in
-			if IntSet.mem rj ci' then
+			if ufd.disjoin_class <- A.set ufd.disjoin_class ri ci'; IntSet.mem rj ci' then
 				raise Impossible_action
 			else
 				let cj' = IntSet.map (find ufd) cj in
+				begin
+				ufd.disjoin_class <- A.set ufd.disjoin_class rj cj';
 				{parent = A.set ufd.parent rj ri; disjoin_class = 
 				A.set ufd.disjoin_class ri (IntSet.union ci' cj')}
+				end
 	
 	let disjoin ufd i j =
 		let ri = find ufd i in
