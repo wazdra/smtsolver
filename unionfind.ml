@@ -24,11 +24,18 @@ module IntSet = Set.Make(
 
 module Make(A : PersistentArray) : UnionFind = struct
 	type t =
-	{mutable parent : int A.t; mutable disjoin_class : IntSet.t A.t}
+	  {
+            rank : int A.t;
+            mutable parent : int A.t;
+            mutable disjoin_class : IntSet.t A.t
+          }
 	
 	let create n =
-		{parent = A.init (n+1) (function i -> i);
-		disjoin_class = A.init (n+1) (function _ -> IntSet.empty)}
+	  {
+            rank = A.init (n+1) (function _ -> 0);
+            parent = A.init (n+1) (function i -> i);
+	    disjoin_class = A.init (n+1) (function _ -> IntSet.empty)
+          }
 	
 	let find ufd i =
 		let rec aux acc i j =
@@ -58,9 +65,25 @@ module Make(A : PersistentArray) : UnionFind = struct
 			else
 				let cj' = IntSet.map (find ufd) cj in
 				begin
-				ufd.disjoin_class <- A.set ufd.disjoin_class rj cj';
-				{parent = A.set ufd.parent rj ri; disjoin_class = 
-				A.set ufd.disjoin_class ri (IntSet.union ci' cj')}
+                                  ufd.disjoin_class <- A.set ufd.disjoin_class rj cj';
+                                  if (A.get ufd.rank ri) > (A.get ufd.rank rj) then
+                                    {
+                                      ufd with 
+                                      parent = A.set ufd.parent rj ri;
+                                      disjoin_class = A.set ufd.disjoin_class ri (IntSet.union ci' cj')
+                                    }
+                                  else if (A.get ufd.rank rj) > (A.get ufd.rank rj) then
+                                    {
+                                      ufd with
+                                      parent = A.set ufd.parent ri rj;
+                                      disjoin_class = A.set ufd.disjoin_class ri (IntSet.union ci' cj');
+                                    }
+                                  else (*rank i = rank j *)
+                                    {
+                                      rank = A.set ufd.rank ri ((A.get ufd.rank ri) +1);
+                                      parent = A.set ufd.parent rj ri;
+                                      disjoin_class = A.set ufd.disjoin_class ri (IntSet.union ci' cj');
+                                    }
 				end
 	
 	let disjoin ufd i j =
@@ -73,8 +96,11 @@ module Make(A : PersistentArray) : UnionFind = struct
 			let ci' = IntSet.add rj ci in
 			let cj = A.get ufd.disjoin_class rj in
 			let cj' = IntSet.add ri cj in
-			{parent = ufd.parent; disjoin_class =
-			A.set (A.set ufd.disjoin_class ri ci') rj cj'}
+			{
+                          ufd with
+                          parent = ufd.parent;
+                          disjoin_class = A.set (A.set ufd.disjoin_class ri ci') rj cj';
+                        }
 end
 
 module PersArr : PersistentArray = struct
