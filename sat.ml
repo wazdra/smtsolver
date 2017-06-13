@@ -139,7 +139,7 @@ module DPLL = struct
     |hd::tl -> dpll.model <- tl;
                solgen_from_dec dpll at
   let fromfile path =
-    let rec start ic = match String.split_on_char ' ' (input_line ic) with
+    let rec start ic = match Str.split (Str.regexp "[ \t]+") (input_line ic) with
       |[] -> start ic
       |"c"::tl -> start ic
       |"p" ::tl -> begin
@@ -149,7 +149,7 @@ module DPLL = struct
       |_ -> raise Bad_file in
     
     let rec clause stringlist = match stringlist with
-      |"0"::[]|[] -> []
+      |"0"::[]|"0"::""::[]|[] -> []
       |""::tl |"\t"::tl -> clause tl
       |hd::tl -> match int_of_string hd with
                  |n when n>0 -> Val(n)::(clause tl)
@@ -159,7 +159,7 @@ module DPLL = struct
     let rec clauses ic =
       try
         match Str.split (Str.regexp "[ \t]+") (input_line ic) with
-        |[] -> clauses ic
+        |[]|""::[] -> clauses ic
         |"c"::tl -> clauses ic
         |hd::tl -> ((clause (hd::tl)) ::(clauses ic))
       with

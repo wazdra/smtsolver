@@ -29,7 +29,8 @@ let sat mode str =
     if mode then aux mysat;
   with
   |No_more_models -> print_endline "Unsat !";
-  |Bad_file -> print_endline "Le fichier DIMACS n'est pas correct";;
+  |Bad_file -> print_endline "Le fichier DIMACS n'est pas correct"
+  |Sys_error _ -> print_endline "Le fichier DIMACS est introuvable !"
 
 module UFD = Make(PersArr);;
 
@@ -68,6 +69,8 @@ let smt mode str =
   in
   let cnf = try file_parser str
             with
+            |Sys_error _ -> print_endline "Le fichier SMT est introuvable !";
+                            exit 0
             |Parsing_failed (n,exn) -> print_string "Ligne ";
                                        print_int n;
                                        print_endline " : erreur de syntaxe.";
@@ -83,8 +86,13 @@ let smt mode str =
     
     aux (cnf.nbvar) (UFD.create cnf.nbvar) formula valu [] [];
   else
-    let ufd,_,_  = onesolution cnf in
-    ufprinter (cnf.nbvar) ufd;;
+    try
+      let ufd,_,_  = onesolution cnf 
+      in
+      ufprinter (cnf.nbvar) ufd
+    with
+    |No_more_models -> print_endline "UNSAT !";
+                       exit 0;;
 
 let help str =
   print_endline str;
